@@ -16,8 +16,11 @@ bot = AsyncTeleBot(config.BOT_TOKEN, parse_mode="HTML")
 register_subscription_handlers(bot)
 register_user_handlers(bot)
 register_admin_handlers(bot)
-init_db()
-ensure_days_for_next_month()
+
+@app.on_event("startup")
+async def _startup() -> None:
+    init_db()
+    ensure_days_for_next_month()
 
 
 @app.get("/")
