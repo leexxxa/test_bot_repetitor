@@ -1,5 +1,6 @@
 from datetime import datetime, date, time, timedelta
 from typing import Optional
+import os
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from telebot.async_telebot import AsyncTeleBot
@@ -9,6 +10,7 @@ from database.db import get_booking_with_details, get_future_bookings_with_remin
 
 scheduler = AsyncIOScheduler()
 _bot: Optional[AsyncTeleBot] = None
+USE_SCHEDULER = os.getenv("USE_SCHEDULER", "1") == "1"
 
 
 def set_bot(bot: AsyncTeleBot) -> None:
@@ -41,6 +43,8 @@ async def send_reminder(booking_id: int) -> None:
 
 
 def schedule_reminder_for_booking(booking_id: int, lesson_date: date, lesson_time: time) -> Optional[datetime]:
+    if not USE_SCHEDULER:
+        return None
     lesson_datetime = datetime.combine(lesson_date, lesson_time)
     now = datetime.utcnow()
 
@@ -69,6 +73,8 @@ def remove_reminder_for_booking(booking_id: int) -> None:
 
 
 def restore_scheduled_reminders() -> None:
+    if not USE_SCHEDULER:
+        return
     bookings = get_future_bookings_with_reminders()
     for booking in bookings:
         booking_id = booking["id"]
