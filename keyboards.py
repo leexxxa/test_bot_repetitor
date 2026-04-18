@@ -10,7 +10,7 @@ from telebot.types import (
 )
 
 import config
-from database.db import get_available_slots_for_date
+from database.db import get_available_slots_for_date, get_days_status_for_period
 
 
 def main_menu_keyboard() -> ReplyKeyboardMarkup:
@@ -63,6 +63,14 @@ def build_calendar(
     keyboard.add(*[InlineKeyboardButton(d, callback_data="IGNORE") for d in week_days])
 
     month_calendar = calendar.Calendar(firstweekday=0).monthdatescalendar(year, month)
+    
+    # Получаем статус дней для всего месяца
+    first_day = date(year, month, 1)
+    last_day = date(year, month, calendar.monthrange(year, month)[1])
+    days_status = get_days_status_for_period(
+        first_day.strftime("%Y-%m-%d"),
+        last_day.strftime("%Y-%m-%d")
+    )
 
     for week in month_calendar:
         buttons: List[InlineKeyboardButton] = []
@@ -77,9 +85,17 @@ def build_calendar(
             if max_date and day > max_date:
                 buttons.append(InlineKeyboardButton(" ", callback_data="IGNORE"))
                 continue
+            
+            # Определяем цвет дня: зеленый для рабочих, красный для нерабочих
+            day_is_open = days_status.get(day_str, True)  # по умолчанию день открыт
+            if day_is_open:
+                button_text = f"🟢{day.day}"
+            else:
+                button_text = f"🔴{day.day}"
+            
             buttons.append(
                 InlineKeyboardButton(
-                    str(day.day),
+                    button_text,
                     callback_data=f"{prefix}_DAY:{day_str}",
                 )
             )

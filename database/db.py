@@ -391,3 +391,21 @@ def get_future_bookings_with_reminders() -> List[sqlite3.Row]:
     conn.close()
     return list(rows)
 
+
+def get_days_status_for_period(start_date: str, end_date: str) -> Dict[str, bool]:
+    """Получить статус дней (открыт/закрыт) для периода дат"""
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute(
+        """
+        SELECT date, is_open
+        FROM days
+        WHERE date >= ? AND date <= ?
+        """,
+        (start_date, end_date),
+    )
+    rows = cur.fetchall()
+    conn.close()
+    
+    return {row["date"]: bool(row["is_open"]) for row in rows}
+
