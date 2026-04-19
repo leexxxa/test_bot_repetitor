@@ -86,14 +86,14 @@ def build_calendar(
                 buttons.append(InlineKeyboardButton(" ", callback_data="IGNORE"))
                 continue
             
-            # Определяем цвет дня на основе реальной доступности
+            # Определяем символ дня на основе реальной доступности
             availability = days_availability.get(day_str, 'closed')
             if availability == 'available':
-                button_text = f"🟢{day.day}"  # Есть свободные слоты
+                button_text = f"✅{day.day}"  # Есть свободные слоты
             elif availability == 'full':
-                button_text = f"🟡{day.day}"  # Слоты заняты
+                button_text = f"❌{day.day}"  # Слоты заняты
             else:  # 'closed'
-                button_text = f"🔴{day.day}"  # День закрыт или нет слотов
+                button_text = f"🚫{day.day}"  # День закрыт или нет слотов
             
             buttons.append(
                 InlineKeyboardButton(
