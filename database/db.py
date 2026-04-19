@@ -409,3 +409,47 @@ def get_days_status_for_period(start_date: str, end_date: str) -> Dict[str, bool
     
     return {row["date"]: bool(row["is_open"]) for row in rows}
 
+
+def get_days_availability_for_period(start_date: str, end_date: str) -> Dict[str, str]:
+    """
+    Получить статус доступности дней для периода
+    Возвращает: 'available' - есть свободные слоты, 'closed' - день закрыт, 'full' - слоты заняты
+    """
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute(
+        """
+        SELECT 
+            d.date,
+            d.is_open,
+            COUNT(s.id) as total_slots,
+            COUNT(CASE WHEN s.is_active = 1 AND b.id IS NULL THEN 1 END) as available_slots
+        FROM days d
+        LEFT JOIN time_slots s ON d.id = s.day_id
+        LEFT JOIN bookings b ON s.id = b.slot_id AND b.status = 'active'
+        WHERE d.date >= ? AND d.date <= ?
+        GROUP BY d.date, d.is_open
+        """,
+        (start_date, end_date),
+    )
+    rows = cur.fetchall()
+    conn.close()
+    
+    result = {}
+    for row in rows:
+        date_str = row["date"]
+        is_open = bool(row["is_open"])
+        total_slots = row["total_slots"] or 0
+        available_slots = row["available_slots"] or 0
+        
+        if not is_open:
+            result[date_str] = 'closed'
+        elif total_slots == 0:
+            result[date_str] = 'closed'  # Нет слотов = день недоступен
+        elif available_slots > 0:
+            result[date_str] = 'available'
+        else:
+            result[date_str] = 'full'  # Все слоты заняты
+    
+    return result
+

@@ -10,7 +10,7 @@ from telebot.types import (
 )
 
 import config
-from database.db import get_available_slots_for_date, get_days_status_for_period
+from database.db import get_available_slots_for_date, get_days_availability_for_period
 
 
 def main_menu_keyboard() -> ReplyKeyboardMarkup:
@@ -64,10 +64,10 @@ def build_calendar(
 
     month_calendar = calendar.Calendar(firstweekday=0).monthdatescalendar(year, month)
     
-    # Получаем статус дней для всего месяца
+    # Получаем статус доступности дней для всего месяца
     first_day = date(year, month, 1)
     last_day = date(year, month, calendar.monthrange(year, month)[1])
-    days_status = get_days_status_for_period(
+    days_availability = get_days_availability_for_period(
         first_day.strftime("%Y-%m-%d"),
         last_day.strftime("%Y-%m-%d")
     )
@@ -86,12 +86,14 @@ def build_calendar(
                 buttons.append(InlineKeyboardButton(" ", callback_data="IGNORE"))
                 continue
             
-            # Определяем цвет дня: зеленый для рабочих, красный для нерабочих
-            day_is_open = days_status.get(day_str, True)  # по умолчанию день открыт
-            if day_is_open:
-                button_text = f"🟢{day.day}"
-            else:
-                button_text = f"🔴{day.day}"
+            # Определяем цвет дня на основе реальной доступности
+            availability = days_availability.get(day_str, 'closed')
+            if availability == 'available':
+                button_text = f"🟢{day.day}"  # Есть свободные слоты
+            elif availability == 'full':
+                button_text = f"🟡{day.day}"  # Слоты заняты
+            else:  # 'closed'
+                button_text = f"🔴{day.day}"  # День закрыт или нет слотов
             
             buttons.append(
                 InlineKeyboardButton(
